@@ -28,6 +28,7 @@
     "loopback",
     "strongloop",
     "role",
+    "user",
     "super",
     "admin",
     "super-user",
