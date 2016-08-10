@@ -1,14 +1,14 @@
 Promise   = require 'bluebird'
 loopback  = require 'loopback'
 
-module.exports = (app)->
+module.exports = (app, aAdminRole)->
   User = loopback.User
   RoleMapping = loopback.RoleMapping
   Role = loopback.Role
 
   # the aRoleName is in the aRole.principals.
   hasRole = (aRole, aRoleName)->
-    return true if aRole.name is 'admin'
+    return true if aAdminRole and aRole.name is aAdminRole
     result = new Promise (resolve, reject)->
       aRole.principals (err, aPrincipals)->
         if err then reject(err) else resolve(aPrincipals)

@@ -1,7 +1,7 @@
 Promise     = require 'bluebird'
 isArray     = require 'util-ex/lib/is/type/array'
 debug       = require('debug')('loopback:security:role:user')
-injectUserHasRole = require './user-has-role'
+injectUserHasRoleMethod = require './user-has-role'
 
 registerRole = (Role, aRoleName, ahasRoleFn, aOperators)->
   debug 'register role resolver: %s', aRoleName
@@ -35,7 +35,7 @@ Role = null
 RoleMapping = null
 
 module.exports = (aApp, aOptions) ->
-  injectUserHasRole aApp
+  injectUserHasRoleMethod aApp, (aOptions and aOptions.adminRole)
 
   loopback = aApp.loopback
   Role = loopback.Role

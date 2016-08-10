@@ -1,6 +1,7 @@
 # Loopback Component user dynamic role
 
-This loopback component add a new dynamic user role which mapping the operators of model to the role.
+This loopback component add a new dynamic user role which mapping the operators of model to the role and
+you can enable the super user role too.
 The role name should be '[`modelName`]' + '.' + '[`operator`]'. The role should be mapped into the ACL too.
 And the role can be nested like this:
 
@@ -10,9 +11,12 @@ Role1:
 
 Role2:
   Role1
+
+Role3:
+  Role2
 ```
 
-The Role2 should has the `User.add` role too.
+The Role3 should has the `User.add` role too.
 
 
 ### Installation
@@ -30,6 +34,7 @@ The Role2 should has the `User.add` role too.
     "loopback-component-role-user": {
       "enabled": true,
       "role": "$user",
+      "adminRole": "admin",
       "models": [],
       "operators":[]
     }
@@ -37,6 +42,8 @@ The Role2 should has the `User.add` role too.
   ```
   - `enabled` *[Boolean]*: whether enable this component. *defaults: true*
   - `role` *[String]* : the role name. *defaults: $user*
+  - `adminRole` *[String]* : the administrator(super user) role name. *defaults: undefined*
+    * `null/undefined/""` means disable the admin(super user) role.
   - `models` *[Boolean|Array of string]*. *defaults: true*
     * enable the admin role to the models. `true` means all models in the app.models.
   - `operators` *[Object]*: the mapping operators of model to the role name.
