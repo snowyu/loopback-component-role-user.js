@@ -6,11 +6,11 @@ module.exports = (app, aAdminRole)->
   RoleMapping = loopback.RoleMapping
   Role = loopback.Role
 
-  # the aRoleName is in the aRole.principals.
-  hasRole = (aRole, aRoleName)->
-    return true if aAdminRole and aRole.name is aAdminRole
-    result = new Promise (resolve, reject)->
-      aRole.principals (err, aPrincipals)->
+  # Whether the aRoleName is in the aRole.principals.
+  Role::hasRole = (aRoleName)->
+    return true if aAdminRole and @name is aAdminRole
+    result = new Promise (resolve, reject)=>
+      @principals (err, aPrincipals)->
         if err then reject(err) else resolve(aPrincipals)
     result.filter (aPrincipal)-> aPrincipal.principalType is RoleMapping.ROLE
     .reduce (aResult, aPrincipal)->
@@ -20,7 +20,7 @@ module.exports = (app, aAdminRole)->
         else
           aResult = Role.findOne where: name: aPrincipal.principalId
           .then (role)->
-            if role then hasRole(role, aRoleName) else false
+            if role then role.hasRole(aRoleName) else false
       aResult
     , false
 
@@ -37,7 +37,7 @@ module.exports = (app, aAdminRole)->
                 if role.name is aRole
                   aResult = true
                 else
-                  hasRole role, aRole
+                  role.hasRole aRole
           aResult
         , false
       else

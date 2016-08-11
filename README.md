@@ -78,5 +78,7 @@ the `User.hasRole(aUserId, aRoleName)` promise async function added to check.
 
 ## History
 
+### V0.2.0
 
++ add the `Role::hasRole`
 
