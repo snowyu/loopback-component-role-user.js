@@ -15,7 +15,7 @@ registerRole = (Role, aRoleName, ahasRoleFn, aOperators)->
       reject()
     else
       vRoleName = context.modelName + '.' + (aOperators[context.property] || context.property)
-      ahasRoleFn vUserId, vRoleName
+      ahasRoleFn vUserId, vRoleName, context
       .then (result)->
         debug 'the userId %s has the %s: %s', vUserId, vRoleName, result
         done(null, result)
@@ -30,9 +30,6 @@ isRoleIn = (aAcls, aRoleName)->
   for acl in aAcls
     return true if acl.principalType is 'ROLE' and acl.principalId is aRoleName
   return false
-
-Role = null
-RoleMapping = null
 
 module.exports = (aApp, aOptions) ->
   injectUserHasRoleMethod aApp, (aOptions and aOptions.adminRole)
