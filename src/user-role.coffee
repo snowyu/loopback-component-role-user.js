@@ -1,9 +1,10 @@
 Promise     = require 'bluebird'
 isArray     = require 'util-ex/lib/is/type/array'
+isFunction  = require 'util-ex/lib/is/type/function'
 debug       = require('debug')('loopback:security:role:user')
 injectUserHasRoleMethod = require './user-has-role'
 
-registerRole = (Role, aRoleName, ahasRoleFn, aOperators)->
+registerRole = (Role, aRoleName, User, aOperators)->
   debug 'register role resolver: %s', aRoleName
   Role.registerResolver aRoleName, (role, context, done)->
     reject = (err)-> if err then done(err) else process.nextTick ->
@@ -15,7 +16,7 @@ registerRole = (Role, aRoleName, ahasRoleFn, aOperators)->
       reject()
     else
       vRoleName = context.modelName + '.' + (aOperators[context.property] || context.property)
-      ahasRoleFn vUserId, vRoleName, context
+      User.hasRole vUserId, vRoleName, context
       .then (result)->
         debug 'the userId %s has the %s: %s', vUserId, vRoleName, result
         done(null, result)
@@ -32,12 +33,17 @@ isRoleIn = (aAcls, aRoleName)->
   return false
 
 module.exports = (aApp, aOptions) ->
-  injectUserHasRoleMethod aApp, (aOptions and aOptions.adminRole)
-
   loopback = aApp.loopback
   Role = loopback.Role
   RoleMapping = loopback.RoleMapping
   User = loopback.User
+
+  vHasRole = (aOptions and aOptions.hasRole)
+  if isFunction vHasRole
+    User.hasRole = vHasRole
+  else
+    injectUserHasRoleMethod aApp, (aOptions and aOptions.adminRole)
+
   vRoleName = (aOptions and aOptions.role) or '$user'
   vOperators = (aOptions and aOptions.operators) or
     create: 'add'
@@ -51,7 +57,6 @@ module.exports = (aApp, aOptions) ->
     destroyById: 'delete'
     deleteById: 'delete'
 
-  vHasRole = (aOptions and aOptions.hasRole) or User.hasRole
   vModels = (aOptions and aOptions.models)
   vModels = [] if vModels is false
   if isArray vModels
@@ -63,7 +68,7 @@ module.exports = (aApp, aOptions) ->
   else
     vModels = aApp.models
 
-  registerRole Role, vRoleName, vHasRole, vOperators
+  registerRole Role, vRoleName, User, vOperators
 
   for vName, Model of vModels
     vAcls = Model.settings.acls
