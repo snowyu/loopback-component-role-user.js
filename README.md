@@ -45,13 +45,13 @@ The Role3 should has the `User.add` role too.
   - `adminRole` *[String]* : the administrator(super user) role name. *defaults: undefined*
     * `null/undefined/""` means disable the admin(super user) role.
   - `models` *[Boolean|Array of string]*. *defaults: true*
-    * enable the admin role to the models. `true` means all models in the app.models.
+    * enable the user role to the models. `true` means all models in the app.models.
   - `operators` *[Object]*: the mapping operators of model to the role name.
     * the `key` is the operator(method), the `value` is the role name.
     * Note: the operator name is the role name if no mapping operator.
     * *defaults:*
 
-      ```json
+      ```js
       {
         create: 'add',
         upsert: 'edit',
