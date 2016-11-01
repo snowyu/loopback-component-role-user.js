@@ -1,10 +1,11 @@
 Promise     = require 'bluebird'
 isArray     = require 'util-ex/lib/is/type/array'
 isFunction  = require 'util-ex/lib/is/type/function'
+extend      = require 'util-ex/lib/_extend'
 debug       = require('debug')('loopback:security:role:user')
-injectUserHasRoleMethod = require './user-has-role'
+injectRoles = require './mixins/roles'
 
-registerRole = (Role, aRoleName, User, aOperators)->
+registerRole = (Role, aRoleName, User, aOperations)->
   debug 'register role resolver: %s', aRoleName
   Role.registerResolver aRoleName, (role, context, done)->
     reject = (err)-> if err then done(err) else process.nextTick ->
@@ -15,14 +16,14 @@ registerRole = (Role, aRoleName, User, aOperators)->
       debug 'disable anonymous user'
       reject()
     else
-      vRoleName = context.modelName + '.' + (aOperators[context.property] || context.property)
-      User.hasRole vUserId, vRoleName, context
+      vPermName = context.modelName + '.' + (aOperations[context.property] || context.property)
+      User.hasPerm vUserId, vPermName, context
       .then (result)->
-        debug 'the userId %s has the %s: %s', vUserId, vRoleName, result
+        debug 'the userId %s has the %s: %s', vUserId, vPermName, result
         done(null, result)
         return
       .catch (err)->
-        debug 'the userId %s has the %s raise error: %s', vUserId, vRoleName, err
+        debug 'the userId %s has the %s raise error: %s', vUserId, vPermName, err
         done(err)
         return
     return
@@ -34,18 +35,13 @@ isRoleIn = (aAcls, aRoleName)->
 
 module.exports = (aApp, aOptions) ->
   loopback = aApp.loopback
-  Role = loopback.Role
-  RoleMapping = loopback.RoleMapping
-  User = loopback.User
-
-  vHasRole = (aOptions and aOptions.hasRole)
-  if isFunction vHasRole
-    User.hasRole = vHasRole
-  else
-    injectUserHasRoleMethod aApp, (aOptions and aOptions.adminRole)
+  Role = (aOptions and aOptions.roleModel and loopback.getModel aOptions.roleModel) || loopback.Role
+  User = (aOptions and aOptions.userModel and loopback.getModel aOptions.userModel) || loopback.User
+  injectRoles Role, aOptions
+  injectRoles User, extend {}, aOptions, RoleModel: Role
 
   vRoleName = (aOptions and aOptions.role) or '$user'
-  vOperators = (aOptions and aOptions.operators) or
+  vOperations = (aOptions and aOptions.operations) or
     create: 'add'
     upsert: 'edit'
     updateAttributes: 'edit'
@@ -68,13 +64,13 @@ module.exports = (aApp, aOptions) ->
   else
     vModels = aApp.models
 
-  registerRole Role, vRoleName, User, vOperators
+  registerRole loopback.Role, vRoleName, User, vOperations
 
   for vName, Model of vModels
     vAcls = Model.settings.acls
     vAcls = Model.settings.acls = [] unless vAcls
     unless isRoleIn vAcls, vRoleName
-      debug 'enable $user for Model %s', vName
+      debug 'enable "%s" Role for Model %s', vRoleName, vName
       vAcls.push
         principalType: 'ROLE'
         principalId: vRoleName
