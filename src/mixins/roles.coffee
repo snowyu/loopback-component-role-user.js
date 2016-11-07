@@ -130,7 +130,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
   Model.getPerms = (aRoles)->
     if isArray aRoles
       Promise.map aRoles, (aId)->
-        if isPerm then aId else findRoleById aId
+        if isPerm(aId) then aId else findRoleById aId
       .reduce (aResult, aRole)->
         _merge aResult, aRole
       , []
@@ -154,6 +154,13 @@ RoleMixin = module.exports = (Model, aOptions) ->
     else
        vGetPerms
 
+  getValidRoles = (aRoles)->
+    if isArray aRoles
+      result = aRoles.filter (item)-> isString(item) and item.length
+    else
+      result = []
+    result
+
   getDiffRoles = (aInstance, ctx)->
     if ctx.instance # full save of a single model
       vAddedRoles = aInstance[rolesFieldName]
@@ -175,7 +182,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
           vDelRoles.push i if vNewRoles.indexOf(i) is -1
       else
         vAddedRoles = aInstance[rolesFieldName]
-    [vAddedRoles, vDelRoles]
+    [getValidRoles(vAddedRoles), getValidRoles(vDelRoles)]
 
   indexOfRef = (aRefs, aModel, aId)->
     for aRef,result in aRefs
@@ -227,6 +234,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
       delete vInstance[permsFieldName]
 
     return Promise.resolve() unless vInstance[rolesFieldName]?
+    vInstance[rolesFieldName] = getValidRoles vInstance[rolesFieldName]
     calcPerms vInstance, ctx
     .then (aPerms)->
       vInstance[permsFieldName] = aPerms
