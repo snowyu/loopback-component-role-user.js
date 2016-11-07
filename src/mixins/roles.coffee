@@ -44,7 +44,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
         "nullable":"Y"
     # DataSource.hiddenProperty Model, roleRefsFieldName
 
-  isPerm = (aRoleId)-> aRoleId.lastIndexOf '.' > 0
+  isPerm = (aRoleId)-> aRoleId.lastIndexOf('.') > 0
 
   if roleIdFieldName is 'id'
     findRoleById = (aId, aOptions) -> RoleModel.findById aId, aOptions
@@ -201,7 +201,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
     if vAddedRoles and vAddedRoles.length
       vAddedRoles = vAddedRoles.filter (item)-> not isPerm item
       vDoAddedRoles = Promise.map vAddedRoles, (aRoleId)->
-        findRoleById aRoleId, fields: roleRefsFieldName
+        findRoleById aRoleId
         .then (aRole)->
           return unless aRole
           vRoleRefs = aRole[roleRefsFieldName] || []
@@ -212,7 +212,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
     if vDelRoles and vDelRoles.length
       vDelRoles = vDelRoles.filter (item)-> not isPerm item
       vDoDelRoles = Promise.map vDelRoles, (aRoleId)->
-        findRoleById aRoleId, fields: roleRefsFieldName
+        findRoleById aRoleId
         .then (aRole)->
           return unless aRole
           vRoleRefs = aRole[roleRefsFieldName] || []
