@@ -24,7 +24,6 @@ eg, `'*.add', 'User.*'`.
 
 **Note:**
 
-* The same permission should NOT be exists in multi-roles.
 * The same role could be exists in multi-roles.
 * Disable batch update roles.
 

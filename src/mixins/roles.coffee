@@ -6,6 +6,10 @@ isObject  = require 'util-ex/lib/is/type/object'
 isString  = require 'util-ex/lib/is/type/string'
 minimatch = require 'minimatch-ex'
 
+match = (aPath, aCollection)->
+  aCollection = Object.keys aCollection if isObject aCollection
+  minimatch aPath, aCollection
+
 ## inject new fields to the Role Model
 RoleMixin = module.exports = (Model, aOptions) ->
 
@@ -28,7 +32,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
       "dataType":"TEXT"
       "nullable":"Y"
   Model.defineProperty permsFieldName,
-    "type": "array"
+    "type": "object"
     "description": "The permissions cache list for roles(Readonly)"
     "mysql":
       "columnName":permsFieldName
@@ -69,7 +73,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
     # if adminRole and @[roleIdFieldName] is adminRole
     #   Promise.resolve(true)
     # else
-    if isArray @[rolesFieldName]
+    if isObject @[permsFieldName]
       Promise.resolve minimatch aPermName, @[permsFieldName]
     else
       Promise.resolve(false)
@@ -121,21 +125,28 @@ RoleMixin = module.exports = (Model, aOptions) ->
 
   _merge = (result, aRole)->
     if isString(aRole)
-      result.push aRole unless minimatch(aRole, result)
-    else if aRole and isArray(vGetPerms = aRole[permsFieldName]) and vGetPerms.length
-      for item in vGetPerms
-        result.push item unless minimatch(item, result)
+      if result[aRole]?
+        result[aRole]++
+      else
+        result[aRole] = 1
+    else if aRole and isObject(vPerms = aRole[permsFieldName])
+      for k,v of vPerms
+        if result[k]?
+          result[k]++
+        else
+          result[k] = 1
     result
 
   Model.getPerms = (aRoles)->
+    # get all perms from roles
     if isArray aRoles
       Promise.map aRoles, (aId)->
         if isPerm(aId) then aId else findRoleById aId
       .reduce (aResult, aRole)->
         _merge aResult, aRole
-      , []
+      , {}
     else
-      Promise.resolve([])
+      Promise.resolve({})
 
   Model::getPerms = -> Model.getPerms @[rolesFieldName]
 
