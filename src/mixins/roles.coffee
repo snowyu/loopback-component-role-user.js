@@ -74,7 +74,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
     #   Promise.resolve(true)
     # else
     if isObject @[permsFieldName]
-      Promise.resolve minimatch aPermName, @[permsFieldName]
+      Promise.resolve match aPermName, @[permsFieldName]
     else
       Promise.resolve(false)
     # return Promise.resolve(true) if @id is adminRole
