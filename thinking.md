@@ -2,17 +2,23 @@
 
 To improve the performance, I've added the `_perms` and `_roleRefs`
 
+
 还需要一张表缓存引用关系: RoleRef, 可以放在roles表中一起。
 发现将用户作为princials放入RoleModel的好处是不用单独注入其他model.
 
-refs 没法起到减轻负荷，最多是起到只迭代refs表中的role,但是这些role的权限必须彻底遍历才能获取。
-这样简化：约定各个role之间不能有交叉权限这就不需要彻底遍历了。只需要update perms.
+refs没法起到减轻负荷，最多是起到只迭代refs表中的role,但是这些role的权限必须彻底遍历才能获取。
+---deprecated:这样简化：约定各个role之间不能有交叉权限这就不需要彻底遍历了。只需要update perms.---
+通过修改 _perms from array to object, and count the permissions to allow across the roles.
+
+
+
 
 * roleId: PK
 * dirty: boolean
 * refs: the roleId list which refer this.
 
 另外思路就是作为后台 task，定时更新cache。
+
 
 
 ## TODO
