@@ -10,6 +10,27 @@ match = (aPath, aCollection)->
   aCollection = Object.keys aCollection if isObject aCollection
   minimatch aPath, aCollection
 
+# ['Account.find=1', 'xxx=3']
+# to {'Account.find':1, 'xxx':3}
+arrayToObject = (value)->
+  result = {}
+  if isArray(value) and value.length
+    for item in value
+      if isString(item)
+        [k,v]=item.split '='
+        result[k]=v
+  if Object.keys(result).length then result else null
+objectToArray = (value)->
+  result = []
+  if isObject(value)
+    for k,v of value
+      result.push k + '=' + v
+  if result.length then result else null
+trimArray = (value)->
+  value.map (item)->
+    [k,_]=item.split('=')
+    k
+
 ## inject new fields to the Role Model
 RoleMixin = module.exports = (Model, aOptions) ->
 
@@ -25,14 +46,14 @@ RoleMixin = module.exports = (Model, aOptions) ->
   rolesUpperName    = capitalizeFirstLetter rolesFieldName
 
   Model.defineProperty rolesFieldName,
-    "type": "array"
+    "type": ["string"]
     "description": "The role list"
     "mysql":
       "columnName":rolesFieldName
       "dataType":"TEXT"
       "nullable":"Y"
   Model.defineProperty permsFieldName,
-    "type": "object"
+    "type": ["string"]
     "description": "The permissions cache list for roles(Readonly)"
     "mysql":
       "columnName":permsFieldName
@@ -73,8 +94,8 @@ RoleMixin = module.exports = (Model, aOptions) ->
     # if adminRole and @[roleIdFieldName] is adminRole
     #   Promise.resolve(true)
     # else
-    if isObject @[permsFieldName]
-      Promise.resolve match aPermName, @[permsFieldName]
+    if isArray(@[permsFieldName])
+      Promise.resolve match aPermName, trimArray @[permsFieldName]
     else
       Promise.resolve(false)
     # return Promise.resolve(true) if @id is adminRole
@@ -129,7 +150,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
         result[aRole]++
       else
         result[aRole] = 1
-    else if aRole and isObject(vPerms = aRole[permsFieldName])
+    else if aRole and isObject(vPerms = arrayToObject aRole[permsFieldName])
       for k,v of vPerms
         if result[k]?
           result[k]++
@@ -248,7 +269,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
     vInstance[rolesFieldName] = getValidRoles vInstance[rolesFieldName]
     calcPerms vInstance, ctx
     .then (aPerms)->
-      vInstance[permsFieldName] = aPerms
+      vInstance[permsFieldName] = objectToArray aPerms
 
   if Model is RoleModel
     Model.observe 'before save',(ctx, next)->

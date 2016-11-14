@@ -9,7 +9,8 @@ To improve the performance, I've added the `_perms` and `_roleRefs`
 refs没法起到减轻负荷，最多是起到只迭代refs表中的role,但是这些role的权限必须彻底遍历才能获取。
 ---deprecated:这样简化：约定各个role之间不能有交叉权限这就不需要彻底遍历了。只需要update perms.---
 通过修改 _perms from array to object, and count the permissions to allow across the roles.
-
+mongodb 的key不能包含'.'。
+决定还是作为数组，元素为: 'Account.find=1'
 
 
 
