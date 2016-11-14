@@ -273,7 +273,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
               return unless aItem
               aItem.getPerms()
               .then (aPerms)->
-                aItem.updateAttribute permsFieldName, aPerms if aPerms and aPerms.length
+                aItem.updateAttribute permsFieldName, aPerms if isObject(aPerms) and Object.keys(aPerms).length
       else
         Promise.resolve()
 
