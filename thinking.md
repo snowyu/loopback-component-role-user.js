@@ -11,7 +11,7 @@ refs没法起到减轻负荷，最多是起到只迭代refs表中的role,但是�
 通过修改 _perms from array to object, and count the permissions to allow across the roles.
 mongodb 的key不能包含'.'。
 决定还是作为数组，元素为: 'Account.find=1'
-
+由于改变时，全部重新计算perms，所以暂时无所谓，切回["Account.find"]
 
 
 * roleId: PK

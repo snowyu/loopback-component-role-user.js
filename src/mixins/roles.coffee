@@ -7,29 +7,29 @@ isString  = require 'util-ex/lib/is/type/string'
 minimatch = require 'minimatch-ex'
 
 match = (aPath, aCollection)->
-  aCollection = Object.keys aCollection if isObject aCollection
+  # aCollection = Object.keys aCollection if isObject aCollection
   minimatch aPath, aCollection
 
 # ['Account.find=1', 'xxx=3']
 # to {'Account.find':1, 'xxx':3}
-arrayToObject = (value)->
-  result = {}
-  if isArray(value) and value.length
-    for item in value
-      if isString(item)
-        [k,v]=item.split '='
-        result[k]=v
-  if Object.keys(result).length then result else null
-objectToArray = (value)->
-  result = []
-  if isObject(value)
-    for k,v of value
-      result.push k + '=' + v
-  if result.length then result else null
-trimArray = (value)->
-  value.map (item)->
-    [k,_]=item.split('=')
-    k
+# arrayToObject = (value)->
+#   result = {}
+#   if isArray(value) and value.length
+#     for item in value
+#       if isString(item)
+#         [k,v]=item.split '='
+#         result[k]=v
+#   if Object.keys(result).length then result else null
+# objectToArray = (value)->
+#   result = []
+#   if isObject(value)
+#     for k,v of value
+#       result.push k + '=' + v
+#   if result.length then result else null
+# trimArray = (value)->
+#   value.map (item)->
+#     [k,_]=item.split('=')
+#     k
 
 ## inject new fields to the Role Model
 RoleMixin = module.exports = (Model, aOptions) ->
@@ -95,7 +95,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
     #   Promise.resolve(true)
     # else
     if isArray(@[permsFieldName])
-      Promise.resolve match aPermName, trimArray @[permsFieldName]
+      Promise.resolve match aPermName, @[permsFieldName]
     else
       Promise.resolve(false)
     # return Promise.resolve(true) if @id is adminRole
@@ -146,16 +146,10 @@ RoleMixin = module.exports = (Model, aOptions) ->
 
   _merge = (result, aRole)->
     if isString(aRole)
-      if result[aRole]?
-        result[aRole]++
-      else
-        result[aRole] = 1
-    else if aRole and isObject(vPerms = arrayToObject aRole[permsFieldName])
-      for k,v of vPerms
-        if result[k]?
-          result[k]++
-        else
-          result[k] = 1
+      result.push(aRole) if result.indexOf(aRole) is -1
+    else if aRole and isArray(vPerms = aRole[permsFieldName])
+      vPerms.forEach (k)->
+        result.push(k) if result.indexOf(k) is -1
     result
 
   Model.getPerms = (aRoles)->
@@ -165,7 +159,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
         if isPerm(aId) then aId else findRoleById aId
       .reduce (aResult, aRole)->
         _merge aResult, aRole
-      , {}
+      , []
     else
       Promise.resolve({})
 
@@ -239,7 +233,8 @@ RoleMixin = module.exports = (Model, aOptions) ->
           vRoleRefs = aRole[roleRefsFieldName] || []
           if indexOfRef(vRoleRefs, Model.modelName, vId) is -1
             vRoleRefs.push model:Model.modelName, id: vId
-            aRole.updateAttribute roleRefsFieldName, vRoleRefs
+            return aRole.updateAttribute roleRefsFieldName, vRoleRefs
+          return
 
     if vDelRoles and vDelRoles.length
       vDelRoles = vDelRoles.filter (item)-> not isPerm item
@@ -251,7 +246,8 @@ RoleMixin = module.exports = (Model, aOptions) ->
           ix = indexOfRef(vRoleRefs, Model.modelName, vId)
           if ix isnt -1
             vRoleRefs.splice ix, 1
-            aRole.updateAttribute roleRefsFieldName, vRoleRefs
+            return aRole.updateAttribute roleRefsFieldName, vRoleRefs
+          return
 
     Promise.all [vDoAddedRoles, vDoDelRoles]
 
@@ -269,7 +265,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
     vInstance[rolesFieldName] = getValidRoles vInstance[rolesFieldName]
     calcPerms vInstance, ctx
     .then (aPerms)->
-      vInstance[permsFieldName] = objectToArray aPerms
+      vInstance[permsFieldName] = aPerms
 
   if Model is RoleModel
     Model.observe 'before save',(ctx, next)->
