@@ -42,6 +42,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
   permsFieldName    = (aOptions && aOptions.permsFieldName) || '_perms'
   roleRefsFieldName = (aOptions && aOptions.roleRefsFieldName) || '_roleRefs'
   roleIdFieldName   = (aOptions && aOptions.roleIdFieldName) || 'name'
+  maxLevel          = (aOptions && aOptions.maxLevel) || 12
   RoleModel         = (aOptions && aOptions.RoleModel) || Model
   rolesUpperName    = capitalizeFirstLetter rolesFieldName
 
@@ -70,6 +71,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
     # DataSource.hiddenProperty Model, roleRefsFieldName
 
   isPerm = (aRoleId)-> aRoleId.lastIndexOf('.') > 0
+  isPermsExist = (aPerms) -> isArray(aPerms) and aPerms.length
 
   if roleIdFieldName is 'id'
     findRoleById = (aId, aOptions) -> RoleModel.findById aId, aOptions
@@ -98,22 +100,6 @@ RoleMixin = module.exports = (Model, aOptions) ->
       Promise.resolve match aPermName, @[permsFieldName]
     else
       Promise.resolve(false)
-    # return Promise.resolve(true) if @id is adminRole
-    # return Promise.resolve minimatch aRoleName, @perms if isArray @perms
-    # vRoles = @principals
-    # if isArray(vRoles) and vRoles.length
-    #   Promise.map vRole, (aRoleId)->
-    #     Model.findById aRoleId
-    #   .reduce (aResult, aRole)->
-    #     unless aResult is true
-    #       if aRole.id is aRoleName
-    #         aResult = true
-    #       else
-    #         aResult = aRole.hasPerm(aRoleName)
-    #     aResult
-    #   , false
-    # else
-    #   Promise.resolve(false)
 
 
   Model::['add'+ rolesUpperName] = (aRoles)->
@@ -147,7 +133,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
   _merge = (result, aRole)->
     if isString(aRole)
       result.push(aRole) if result.indexOf(aRole) is -1
-    else if aRole and isArray(vPerms = aRole[permsFieldName])
+    else if aRole and isPermsExist(vPerms = aRole[permsFieldName])
       vPerms.forEach (k)->
         result.push(k) if result.indexOf(k) is -1
     result
@@ -161,7 +147,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
         _merge aResult, aRole
       , []
     else
-      Promise.resolve({})
+      Promise.resolve([])
 
   Model::getPerms = -> Model.getPerms @[rolesFieldName]
 
@@ -233,7 +219,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
           vRoleRefs = aRole[roleRefsFieldName] || []
           if indexOfRef(vRoleRefs, Model.modelName, vId) is -1
             vRoleRefs.push model:Model.modelName, id: vId
-            return aRole.updateAttribute roleRefsFieldName, vRoleRefs
+            return aRole.updateAttribute roleRefsFieldName, vRoleRefs, skipPropertyFilter:true
           return
 
     if vDelRoles and vDelRoles.length
@@ -246,14 +232,14 @@ RoleMixin = module.exports = (Model, aOptions) ->
           ix = indexOfRef(vRoleRefs, Model.modelName, vId)
           if ix isnt -1
             vRoleRefs.splice ix, 1
-            return aRole.updateAttribute roleRefsFieldName, vRoleRefs
+            return aRole.updateAttribute roleRefsFieldName, vRoleRefs, skipPropertyFilter:true
           return
 
     Promise.all [vDoAddedRoles, vDoDelRoles]
 
   Model.observe 'before save',(ctx)->
     vInstance = ctx.instance || ctx.data
-    return Promise.resolve() unless vInstance
+    return Promise.resolve() if !vInstance or (ctx.options and ctx.options.skipPropertyFilter)
 
     # disable update/save the perms field
     if ctx.instance # full save of a single model
@@ -266,9 +252,20 @@ RoleMixin = module.exports = (Model, aOptions) ->
     calcPerms vInstance, ctx
     .then (aPerms)->
       vInstance[permsFieldName] = aPerms
+      ctx.options = {} unless ctx.options
+      ctx.options.updatePermsByRefs = 0
+
+  Model.observe 'after save',(ctx)->
+    return Promise.resolve() if ctx.options and ctx.options.skipPropertyFilter
+
+    vInstance = ctx.instance || ctx.data
+    return Promise.resolve() unless vInstance and vInstance[rolesFieldName]?
+    addToRefs(vInstance, ctx)
 
   if Model is RoleModel
     Model.observe 'before save',(ctx, next)->
+      return next() if ctx.options and ctx.options.skipPropertyFilter
+
       vInstance = ctx.instance || ctx.data
 
       # disable update/save the roleRefs field
@@ -280,6 +277,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
       next()
 
     updatePermsByRefs = (aInstance, ctx)->
+      # ctx.hookState?
       vRefs = aInstance[roleRefsFieldName]
       if vRefs and vRefs.length
         Promise.map vRefs, (aRef)->
@@ -290,18 +288,22 @@ RoleMixin = module.exports = (Model, aOptions) ->
               return unless aItem
               aItem.getPerms()
               .then (aPerms)->
-                aItem.updateAttribute permsFieldName, aPerms if isObject(aPerms) and Object.keys(aPerms).length
+                if isPermsExist(aPerms)
+                  vLevel = (ctx.options && ctx.options.updatePermsByRefs) || 0
+                  vLevel++
+                  aItem.updateAttribute permsFieldName, aPerms,
+                    skipPropertyFilter:true
+                    updatePermsByRefs: vLevel
       else
         Promise.resolve()
 
     Model.observe 'after save',(ctx)->
       vInstance = ctx.instance || ctx.data
-      return Promise.resolve() unless vInstance and vInstance[rolesFieldName]?
-      addToRefs(vInstance, ctx)
-      .then ->
-        updatePermsByRefs vInstance, ctx
-  else
-    Model.observe 'after save',(ctx)->
-      vInstance = ctx.instance || ctx.data
-      return Promise.resolve() unless vInstance and vInstance[rolesFieldName]?
-      addToRefs(vInstance, ctx)
+      vLevel = ctx.options && ctx.options.updatePermsByRefs
+      return Promise.resolve() unless vLevel? and vInstance and vInstance[rolesFieldName]?
+      if vLevel >= maxLevel
+        vError = new Error 'Exceed max level limits:' + maxLevel
+        vError.code = 'ROLE_MAX_LEVEL_LIMITS'
+        return Promise.reject vError
+      # when perms changed.
+      updatePermsByRefs vInstance, ctx
