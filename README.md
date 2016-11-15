@@ -26,6 +26,7 @@ eg, `'*.add', 'User.*'`.
 
 * The same role could be exists in multi-roles.
 * Disable batch update roles.
+* The nested max level of role to limit.
 
 
 ### Installation
@@ -54,6 +55,7 @@ eg, `'*.add', 'User.*'`.
   }
   ```
   - `enabled` *[Boolean]*: whether enable this component. *defaults: true*
+  - `maxLevel` *[Integer]*: the max nested role level to limit. *defaults: 10*
   - `role` *[String]* : the role name. *defaults: $user*
   - `roleModel` *[string]*: The role model to inject. *defaults: Role*
     * The `rolesFieldName` and `permsFieldName` fields will be added to the Model.
