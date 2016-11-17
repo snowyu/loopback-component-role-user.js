@@ -56,6 +56,7 @@ eg, `'*.add', 'User.*'`.
   ```
   - `enabled` *[Boolean]*: whether enable this component. *defaults: true*
   - `maxLevel` *[Integer]*: the max nested role level to limit. *defaults: 10*
+  - `deleteUsedRole` *[Boolean]*: whether allow to cascade delete used roles. *defaults: false*
   - `role` *[String]* : the role name. *defaults: $user*
   - `roleModel` *[string]*: The role model to inject. *defaults: Role*
     * The `rolesFieldName` and `permsFieldName` fields will be added to the Model.

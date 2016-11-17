@@ -6,6 +6,25 @@ isObject  = require 'util-ex/lib/is/type/object'
 isString  = require 'util-ex/lib/is/type/string'
 minimatch = require 'minimatch-ex'
 
+removeArray = (arr, items)->
+  items = [items] if isString items
+  a = items
+  L = a.length
+  result = 0
+  while L && arr.length
+    what = a[--L]
+    while (ax = arr.indexOf(what)) != -1
+      arr.splice(ax, 1)
+      result++
+  result
+removeObject = (arr, items, model)->
+  result = 0
+  arr.forEach (item, index)->
+    if item.model is model and items.indexOf(item.id)>=0
+      arr.splice(index, 1)
+      result++
+  result
+
 match = (aPath, aCollection)->
   # aCollection = Object.keys aCollection if isObject aCollection
   minimatch aPath, aCollection
@@ -43,6 +62,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
   roleRefsFieldName = (aOptions && aOptions.roleRefsFieldName) || '_roleRefs'
   roleIdFieldName   = (aOptions && aOptions.roleIdFieldName) || 'name'
   maxLevel          = (aOptions && aOptions.maxLevel) || 12
+  deleteUsedRole    = (aOptions && aOptions.deleteUsedRole) || false
   RoleModel         = (aOptions && aOptions.RoleModel) || Model
   rolesUpperName    = capitalizeFirstLetter rolesFieldName
 
@@ -262,7 +282,72 @@ RoleMixin = module.exports = (Model, aOptions) ->
     return Promise.resolve() unless vInstance and vInstance[rolesFieldName]?
     addToRefs(vInstance, ctx)
 
+  # remove itself from roleRefs
+  Model.observe 'before delete',(ctx)->
+    vState = ctx.hookState
+    vState.deletedRoles = []
+    vRoleRefs = new Set()
+    vRoles = new Set()
+    Model.find where: ctx.where, fields: ['id', roleRefsFieldName, rolesFieldName]
+    .then (results)->
+      if results
+        Promise.each results, (item)->
+          if (v = item[rolesFieldName]) and v.length
+            v.forEach (i)-> vRoles.add i unless isPerm i
+            vOk = true
+          if (v = item[roleRefsFieldName]) and v.length
+            #  for cascade delete. write here to speedup. no more Model.find.
+            v.forEach (i)-> vRoleRefs.add i
+            vOk = true
+          if vOk
+            vState.deletedRoles.push item.id
+          return
+    .then ->
+      vState.roles = Array.from(vRoles) if vRoles.size
+      vState.roleRefs = Array.from(vRoleRefs) if vRoleRefs.size
+      vState.deletedRoles = null unless vState.deletedRoles.length
+      return
+
+  # remove itself from roleRefs
+  Model.observe 'after delete',(ctx)->
+    vState = ctx.hookState
+    return Promise.resolve() unless vState.roles and vState.deletedRoles
+    vRoles = vState.roles
+    Promise.map vState.roles, (id)->
+      Model.findById id
+    .each (item)->
+      return unless item
+      vRoleRefs = item[roleRefsFieldName]
+      if vRoleRefs and vRoleRefs.length and removeObject vRoleRefs, vState.deletedRoles, Model.modelName
+        result = item.updateAttribute roleRefsFieldName, vRoleRefs, skipPropertyFilter:true
+      result
+
   if Model is RoleModel
+    if deleteUsedRole # cascade delete.
+      Model.observe 'after delete',(ctx)->
+        vState = ctx.hookState
+        return Promise.resolve() unless vState.deletedRoles and vState.roleRefs
+        Promise.map vState.roleRefs, (i)->
+          M = loopback.getModel i.model
+          M.findById i.id if M
+        .each (item)->
+          return unless item
+          vRoles = item[rolesFieldName]
+          if vRoles and vRoles.length
+            if removeArray vRoles, vState.deletedRoles
+              result = item.updateAttribute rolesFieldName, vRoles
+          result
+    else # not deleteUsedRole
+      Model.observe 'before delete',(ctx)->
+        Model.find where: ctx.where, fields: ['id', roleRefsFieldName]
+        .then (results)->
+          if results
+            Promise.each results, (item)->
+              if (v=item[roleRefsFieldName]) and v.length
+                vError = new Error 'Can not delete the used role:' + item.id
+                vError.code = 'DELETE_USED_ROLE'
+                throw vError
+
     Model.observe 'before save',(ctx, next)->
       return next() if ctx.options and ctx.options.skipPropertyFilter
 
