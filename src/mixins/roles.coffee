@@ -193,27 +193,17 @@ RoleMixin = module.exports = (Model, aOptions) ->
       result = []
     result
 
-  getDiffRoles = (aInstance, ctx)->
-    if ctx.instance # full save of a single model
-      vAddedRoles = aInstance[rolesFieldName]
-    else # if ctx.data # Partial update of possibly multiple models
-      unless ctx.currentInstance # The Role only
-        err = new Error
-        err.statusCode = 401
-        err.message = 'Disable batch update roles'
-        err.code = 'NO_AUTHORITY_BATCH_ROLE'
-        throw err
+  getDiffRoles = (aNewRoles, aOriginalRoles)->
+    if aOriginalRoles and aOriginalRoles.length
       vAddedRoles = []
       vDelRoles = []
-      vOrgionalRoles = ctx.currentInstance[rolesFieldName]
-      if vOrgionalRoles and vOrgionalRoles.length
-        vNewRoles = aInstance[rolesFieldName]
-        for i in vNewRoles
-          vAddedRoles.push i if vOrgionalRoles.indexOf(i) is -1
-        for i in vOrgionalRoles
-          vDelRoles.push i if vNewRoles.indexOf(i) is -1
-      else
-        vAddedRoles = aInstance[rolesFieldName]
+      for i in aNewRoles
+        vAddedRoles.push i if aOriginalRoles.indexOf(i) is -1
+      for i in aOriginalRoles
+        vDelRoles.push i if aNewRoles.indexOf(i) is -1
+    else
+      vAddedRoles = aNewRoles
+
     [getValidRoles(vAddedRoles), getValidRoles(vDelRoles)]
 
   indexOfRef = (aRefs, aModel, aId)->
@@ -223,10 +213,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
     -1
 
   addToRefs = (aInstance, ctx)->
-    try
-      [vAddedRoles, vDelRoles] = getDiffRoles aInstance, ctx
-    catch err
-      return Promise.reject(err)
+    [vAddedRoles, vDelRoles] = getDiffRoles aInstance[rolesFieldName], ctx.hookState.oldRoles
 
     vId = aInstance.id
 
@@ -267,17 +254,36 @@ RoleMixin = module.exports = (Model, aOptions) ->
     else # if ctx.data # Partial update of possibly multiple models
       delete vInstance[permsFieldName]
 
+    if ctx.data and !ctx.currentInstance
+      err = new Error
+      # err.statusCode = 401
+      err.message = 'Disable batch update roles'
+      err.code = 'NO_AUTHORITY_BATCH_ROLE'
+      return Promise.reject err
+
+    if ctx.data
+      saveOldRoles = Model.findById ctx.currentInstance.id, fields: [rolesFieldName]
+      .then (instance)->
+        vRoles = instance[rolesFieldName] if instance
+        ctx.hookState.oldRoles = vRoles if vRoles and vRoles.length
+        return
+
     return Promise.resolve() unless vInstance[rolesFieldName]?
+
     vInstance[rolesFieldName] = getValidRoles vInstance[rolesFieldName]
-    calcPerms vInstance, ctx
-    .then (aPerms)->
-      vInstance[permsFieldName] = aPerms
-      ctx.options = {} unless ctx.options
-      ctx.options.updatePermsByRefs = 0
+    saveOldRoles = Promise.resolve() unless saveOldRoles
+
+
+    saveOldRoles.then ->
+      calcPerms vInstance, ctx
+      .then (aPerms)->
+        vInstance[permsFieldName] = aPerms
+        ctx.options = {} unless ctx.options
+        ctx.options.updatePermsByRefs = 0
 
   Model.observe 'after save',(ctx)->
     return Promise.resolve() if ctx.options and ctx.options.skipPropertyFilter
-
+    # it's always ctx.instance after saving?
     vInstance = ctx.instance || ctx.data
     return Promise.resolve() unless vInstance and vInstance[rolesFieldName]?
     addToRefs(vInstance, ctx)
