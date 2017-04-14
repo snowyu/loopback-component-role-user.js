@@ -61,6 +61,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
   permsFieldName    = (aOptions && aOptions.permsFieldName) || '_perms'
   roleRefsFieldName = (aOptions && aOptions.roleRefsFieldName) || '_roleRefs'
   roleIdFieldName   = (aOptions && aOptions.roleIdFieldName) || 'name'
+  ownerFieldName    = (aOptions && aOptions.ownerFieldName) || 'creatorId'
   maxLevel          = (aOptions && aOptions.maxLevel) || 12
   deleteUsedRole    = (aOptions && aOptions.deleteUsedRole) || false
   RoleModel         = (aOptions && aOptions.RoleModel) || Model
@@ -102,22 +103,42 @@ RoleMixin = module.exports = (Model, aOptions) ->
       aOptions.where[roleIdFieldName] = aId
       RoleModel.findOne aOptions
 
-  Model.hasPerm = (aId, aPermName)->
+  Model.hasPerm = (aId, aPermName, aContext)->
     Model.findById aId
     .then (aModel)->
-      return aModel.hasPerm(aPermName) if aModel
+      return aModel.hasPerm(aPermName, aContext) if aModel
       # err = new TypeError
       # err.statusCode = 404
       # err.message = Model.modelName + ' no such id:', aId
       # err.code = 'ID_NOT_EXISTS'
       # throw err
 
-  Model::hasPerm = (aPermName)->
-    # if adminRole and @[roleIdFieldName] is adminRole
-    #   Promise.resolve(true)
-    # else
+  Model::hasPerm = (aPermName, aContext)->
     if isArray(@[permsFieldName])
-      Promise.resolve match aPermName, @[permsFieldName]
+      result = match aPermName, @[permsFieldName]
+      if !result and aContext
+        aPermName += '.owned'
+        result = match aPermName, @[permsFieldName]
+        if result
+          result = aContext.model
+          if result
+            vUserId = aContext.getUserId()
+            if aContext.modelId?
+              result = aContext.model.findById aContext.modelId
+              .then (m)->
+                m and m[ownerFieldName] is vUserId
+            else if result = aContext.remotingContext?.args?.hasOwnProperty 'filter'
+              vArgs = aContext.remotingContext.args
+              if isString vArgs.filter
+                vFilter = JSON.parse vArgs.filter
+              else
+                vFilter = extend {}, vArgs.filter
+              vWhere  = vFilter.where
+              vWhere  = vFilter.where = {} unless isObject vWhere
+              vWhere[ownerFieldName] = vUserId
+              vArgs.filter = vFilter
+
+      Promise.resolve result
     else
       Promise.resolve(false)
 

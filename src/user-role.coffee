@@ -33,10 +33,11 @@ isRoleIn = (aAcls, aRoleName)->
     return true if acl.principalType is 'ROLE' and acl.principalId is aRoleName
   return false
 
-module.exports = (aApp, aOptions) ->
+module.exports = (aApp, aOptions = {}) ->
   loopback = aApp.loopback
-  Role = (aOptions and aOptions.roleModel and loopback.getModel aOptions.roleModel) || loopback.Role
-  User = (aOptions and aOptions.userModel and loopback.getModel aOptions.userModel) || loopback.User
+  Role = (aOptions.roleModel and loopback.getModel aOptions.roleModel) || loopback.Role
+  User = (aOptions.userModel and loopback.getModel aOptions.userModel) || loopback.User
+  # aOptions.ownerFieldName = 'creatorId' unless aOptions.ownerFieldName
   injectRoles Role, aOptions
   injectRoles User, extend {}, aOptions, RoleModel: Role
 

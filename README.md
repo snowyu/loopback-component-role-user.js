@@ -22,11 +22,15 @@ The role could have multi containers of permission(aother role) or permissions.
 The Permission is the model with operation. You can use the `*` to match the any model or any operation.
 eg, `'*.add', 'User.*'`.
 
+Add the `.owned` dynamical roles to `edit`, `view`, `find`, and `delete` roles as postfix.
+For only edit/delete/view/find owned items.
+
+
 **Note:**
 
 * The same role could be exists in multi-roles.
 * Disable batch update roles.
-* The nested max level of role to limit.
+* The nested max level of role to limit. see config: `maxLevel`
 
 
 ### Installation
@@ -72,6 +76,7 @@ eg, `'*.add', 'User.*'`.
     * The model(role) can have zero or more roles/permissions.
   - `permsFieldName` *[string]*: The cached perms of this role. *defaults: _perms*
     * Cache all the permissions to the roles(Readonly).
+  - `ownerFieldName` *[string]*: The owner id field to define. *defaults: creatorId*
   - `roleRefsFieldName` *[string]*: The cached items which reference this role(Readonly). *defaults: _roleRefs*
   - `models` *[Boolean|Array of string]*. *defaults: true*
     * enable the user role to the models. `true` means all models in the app.models.
@@ -105,6 +110,11 @@ set `DEBUG=loopback:security:role:user` env vaiable to show debug info.
 `Model::hasPerm(perm)`
 
 ## History
+
+### V1.1.0
+
++ add the `.owned` dynamical roles to `edit.owned`, `view.owned`, `find.owned`, and `delete.owned`.
+  Only edit/delete/view/find owned items.
 
 ### V1.0.0
 
