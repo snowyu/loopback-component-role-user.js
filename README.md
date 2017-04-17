@@ -111,10 +111,21 @@ set `DEBUG=loopback:security:role:user` env vaiable to show debug info.
 
 ## History
 
-### V1.1.0
+### V1.2.0
 
 + add the `.owned` dynamical roles to `edit.owned`, `view.owned`, `find.owned`, and `delete.owned`.
   Only edit/delete/view/find owned items.
+
+### V1.1.0
+
+* remove the limits: The same permission CAN NOT be exists in multi-roles.
+* [bug] the hasPerm should use the match function instead minimatch
+* [bug] updatePermsByRefs can not work properly.
+* [bug] mongodb error: key can not contain "." for _perms is object
+* [bug] can not change itself to roleRefs after roles changed
++ add the `maxLevel` option to limit the max nested role level to avoid recusive
+* avoid exception when component not enabled.
++ add the `deleteUsedRole` option to allow or forbidden cascade delete
 
 ### V1.0.0
 
