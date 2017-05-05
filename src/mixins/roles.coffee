@@ -4,6 +4,7 @@ loopback  = require 'loopback'
 isArray   = require 'util-ex/lib/is/type/array'
 isObject  = require 'util-ex/lib/is/type/object'
 isString  = require 'util-ex/lib/is/type/string'
+extend    = require 'util-ex/lib/_extend'
 minimatch = require 'minimatch-ex'
 
 removeArray = (arr, items)->
