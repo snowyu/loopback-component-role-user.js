@@ -24,6 +24,17 @@ mongodb 的key不能包含'.'。
 
 ## TODO
 
+### 2017-11-27
+
++ add the `cached` option:
+  * `0` 'none': no cache. 每次都需要递归查找权限。
+  * `1` 'updated': the perms updated when the role updated
+    * Role Model上也有 _perms 缓存
+    * `deleteUsedRole` 仅当在该参数下才有用。
+  * `2` 'logined': the perms updated when logined or perms is empty.
+
+------------------------
+
 The perfect way is use the stored proc of database(triggers) to sync cache:
 But howto MongoDB?
 
