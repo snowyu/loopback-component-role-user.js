@@ -115,7 +115,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
       vPerms = Promise.resolve @[permsFieldName]
     else
       vPerms = @getPerms()
-    vPerms.then (aPerms)->
+    vPerms.then (aPerms)=>
       result = isArray(aPerms)
       vData = {}
       vData[permsFieldName] = result
