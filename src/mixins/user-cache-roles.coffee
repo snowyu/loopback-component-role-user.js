@@ -82,7 +82,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
     # get all perms from roles
     if isArray aRoles
       Promise.map aRoles, (aId)->
-        if isPerm(aId) aId else findRoleById aId
+        if isPerm(aId) then aId else findRoleById aId
       .reduce (result, aRole)->
         if isString aRole
           result.push(aRole) if result.indexOf(aRole) is -1
@@ -102,7 +102,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
   Model.getPerms = (aRoles, lastVisited = 0)->
     _mergePerms([], aRoles, lastVisited)
 
-  Model::getPerms(lastVisited = 0) = -> Model.getPerms @[rolesFieldName], lastVisited
+  Model::getPerms = (lastVisited = 0)-> Model.getPerms @[rolesFieldName], lastVisited
 
   Model.hasPerm = (aId, aPermName, aContext)->
     Model.findById aId
