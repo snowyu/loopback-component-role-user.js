@@ -62,8 +62,8 @@ For only edit/delete/view/find owned items.
   - `enabled` *[Boolean]*: whether enable this component. *defaults: true*
   - `cached`: *[Integer]*: whether cache the perms. *defaults: 1*
     * `0` 'none': no cache.
-    * `1` 'updated': the cached perms updated when the role updated
-    * `2` 'logined': use the cached perms if the _perms is not empty.
+    * `1` 'updated': the cached perms updated when the role updated(default)
+    * `2` 'manual': if the _perms is not empty use the cached _perms  else calc perms and update the _perms.
         * NOTE: you should update the `_perms` field by yourself. just empty it for updated.
   - `deleteUsedRole` *[Boolean]*: whether allow to cascade delete used roles. *defaults: false*
       * only for updated `cached`: 1.
