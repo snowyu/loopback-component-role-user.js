@@ -105,7 +105,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
 
   Model::getPerms = (lastVisited = 0)->
     if isFunc Model._getPerms
-      Model._getPerms(aRoles, lastVisited)
+      Model._getPerms(@, aRoles, lastVisited)
     else
       Model.getPerms @[rolesFieldName], lastVisited
 
