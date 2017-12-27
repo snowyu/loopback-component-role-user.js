@@ -4,6 +4,7 @@ loopback  = require 'loopback'
 isArray   = require 'util-ex/lib/is/type/array'
 isObject  = require 'util-ex/lib/is/type/object'
 isString  = require 'util-ex/lib/is/type/string'
+isFunc    = require 'util-ex/lib/is/type/function'
 extend    = require 'util-ex/lib/_extend'
 minimatch = require 'minimatch-ex'
 
@@ -102,7 +103,11 @@ RoleMixin = module.exports = (Model, aOptions) ->
   Model.getPerms = (aRoles, lastVisited = 0)->
     _mergePerms([], aRoles, lastVisited)
 
-  Model::getPerms = (lastVisited = 0)-> Model.getPerms @[rolesFieldName], lastVisited
+  Model::getPerms = (lastVisited = 0)->
+    if isFunc Model._getPerms
+      Model._getPerms(aRoles, lastVisited)
+    else
+      Model.getPerms @[rolesFieldName], lastVisited
 
   Model.hasPerm = (aId, aPermName, aContext)->
     Model.findById aId
