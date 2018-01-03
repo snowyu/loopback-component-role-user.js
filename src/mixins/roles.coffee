@@ -6,6 +6,8 @@ userCache     = require './user-cache-roles'
 ## inject new fields to the Role Model
 RoleMixin = module.exports = (Model, aOptions) ->
 
+  capitalizeFirstLetter = (aString)-> aString.charAt(0).toUpperCase() + aString.slice(1)
+
   cached            = (aOptions && aOptions.cached) || 1
   rolesFieldName    = (aOptions && aOptions.rolesFieldName) || 'roles'
   permsFieldName    = (aOptions && aOptions.permsFieldName) || '_perms'
