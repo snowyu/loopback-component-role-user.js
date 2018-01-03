@@ -52,6 +52,7 @@
   "main": "./index",
   "bin": {},
   "scripts": {
+    "prepare": "grunt build",
     "test": "grunt test",
     "test-cov": "mocha --reporter dot && istanbul report text-summary lcovonly"
   },
