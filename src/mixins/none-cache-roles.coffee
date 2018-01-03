@@ -90,7 +90,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
         else if aRole
           if lastVisited < maxLevel
             ++lastVisited
-            _merege(result, aRole[rolesFieldName], lastVisited)
+            _mergePerms(result, aRole[rolesFieldName], lastVisited)
           else
             vError = new Error 'Exceed max level limits:' + maxLevel
             vError.code = 'ROLE_MAX_LEVEL_LIMITS'
