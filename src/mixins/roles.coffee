@@ -8,7 +8,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
 
   capitalizeFirstLetter = (aString)-> aString.charAt(0).toUpperCase() + aString.slice(1)
 
-  cached            = (aOptions && aOptions.cached) || 1
+  cached            = if aOptions && aOptions.cached? then aOptions.cached else 1
   rolesFieldName    = (aOptions && aOptions.rolesFieldName) || 'roles'
   permsFieldName    = (aOptions && aOptions.permsFieldName) || '_perms'
   roleRefsFieldName = (aOptions && aOptions.roleRefsFieldName) || '_roleRefs'
