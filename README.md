@@ -118,6 +118,10 @@ set `DEBUG=loopback:security:role:user` env vaiable to show debug info.
 
 ## History
 
+### V1.3.0
+
++ add the `cached` to determine whether cache the perms.
+
 ### V1.2.0
 
 + add the `.owned` dynamical roles to `edit.owned`, `view.owned`, `find.owned`, and `delete.owned`.
