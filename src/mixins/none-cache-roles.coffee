@@ -172,6 +172,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
   Model.observe 'before save',(ctx)->
     vInstance = ctx.instance || ctx.data
     return Promise.resolve() if !vInstance or (ctx.options and ctx.options.skipPropertyFilter)
+    return Promise.resolve() unless vInstance[rolesFieldName]?
 
     return Promise.resolve() unless ctx.options and (remoteCtx = ctx.options.remoteCtx) and remoteCtx.req and account = remoteCtx.req.currentUser
 
