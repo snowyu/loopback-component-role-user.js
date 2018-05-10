@@ -1,3 +1,9 @@
+# Perms
+
+* A permission : an `operation` of a `model`.
+* `.owned` : only creator can do an operation.
+
+
 # Performance
 
 To improve the performance, I've added the `_perms` and `_roleRefs`

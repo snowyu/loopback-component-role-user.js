@@ -16,6 +16,7 @@ module.exports = (aPerms, aPermName, aContext, ownerFieldName)->
       vOwnedPermName += '.owned'
       result = match vOwnedPermName, aPerms
       if result
+        aContext['owned'] = true
         result = aContext.model
         if result
           # get the current session user id.
