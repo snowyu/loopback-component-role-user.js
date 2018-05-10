@@ -6,7 +6,7 @@ isObject  = require 'util-ex/lib/is/type/object'
 isString  = require 'util-ex/lib/is/type/string'
 isFunc    = require 'util-ex/lib/is/type/function'
 extend    = require 'util-ex/lib/_extend'
-minimatch = require 'minimatch-ex'
+hasPerm   = require './has-perm'
 
 removeArray = (arr, items)->
   items = [items] if isString items
@@ -26,10 +26,6 @@ removeObject = (arr, items, model)->
       arr.splice(index, 1)
       result++
   result
-
-match = (aPath, aCollection)->
-  # aCollection = Object.keys aCollection if isObject aCollection
-  minimatch aPath, aCollection
 
 # ['Account.find=1', 'xxx=3']
 # to {'Account.find':1, 'xxx':3}
@@ -116,30 +112,7 @@ RoleMixin = module.exports = (Model, aOptions) ->
 
   Model::hasPerm = (aPermName, aContext)->
     @getPerms().then (aPerms)->
-      result = isArray(aPerms)
-      if result
-        result = match aPermName, aPerms
-        if !result and aContext
-          aPermName += '.owned'
-          result = match aPermName, aPerms
-          if result
-            result = aContext.model
-            if result
-              vUserId = aContext.getUserId()
-              if aContext.modelId?
-                result = aContext.model.findById aContext.modelId
-                .then (m)-> m and m[ownerFieldName] is vUserId
-              else if result = aContext.remotingContext?.args?.hasOwnProperty 'filter'
-                vArgs = aContext.remotingContext.args
-                if isString vArgs.filter
-                  vFilter = JSON.parse vArgs.filter
-                else
-                  vFilter = extend {}, vArgs.filter
-                vWhere  = vFilter.where
-                vWhere  = vFilter.where = {} unless isObject vWhere
-                vWhere[ownerFieldName] = vUserId
-                vArgs.filter = vFilter
-      result
+      hasPerm(aPerms, aPermName, aContext, ownerFieldName)
 
   Model::['add'+ rolesUpperName] = (aRoles)->
     result = @[rolesFieldName] || []
