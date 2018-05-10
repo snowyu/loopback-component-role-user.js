@@ -15,10 +15,10 @@ we should limit the resource's creator(ownerFieldName) is itself.
 module.exports = (aPerms, aPermName, aContext, ownerFieldName)->
   if isArray(aPerms)
     result = match aPermName, aPerms
-    if !result and aContext
+    if aContext
       vOwnedPermName += '.owned'
-      result = match vOwnedPermName, aPerms
-      if result
+      aContext.owned = true if match vOwnedPermName, aPerms
+      if !result and aContext.owned
         aContext['owned'] = true
         result = aContext.model
         if result
