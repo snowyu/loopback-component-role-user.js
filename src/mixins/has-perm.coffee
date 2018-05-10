@@ -16,7 +16,7 @@ module.exports = (aPerms, aPermName, aContext, ownerFieldName)->
   if isArray(aPerms)
     result = match aPermName, aPerms
     if aContext
-      vOwnedPermName += '.owned'
+      vOwnedPermName = aPermName + '.owned'
       aContext.owned = true if match vOwnedPermName, aPerms
       if !result and aContext.owned
         aContext['owned'] = true
